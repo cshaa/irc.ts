@@ -126,7 +126,6 @@ export class Client extends EventEmitter {
     this.addListener("raw", (message) => {
       var channels: string[] = [];
       var channel;
-      var nick;
       var from;
       var text;
       var to;
@@ -797,13 +796,12 @@ export class Client extends EventEmitter {
       }
     });
 
-    this.addListener("kick", (channel, who, by, reason) => {
-      if (this.opt.autoRejoin)
-        this.send.apply(this, ["JOIN"].concat(channel.split(" ")));
+    this.addListener("kick", (channel: string, who, by, reason) => {
+      if (this.opt.autoRejoin) this.send("JOIN", ...channel.split(" "));
     });
     this.addListener("motd", (motd) => {
       this.opt.channels.forEach((channel) => {
-        this.send.apply(this, ["JOIN"].concat(channel.split(" ")));
+        this.send("JOIN", ...channel.split(" "));
       });
     });
   }
@@ -1102,7 +1100,7 @@ export class Client extends EventEmitter {
   activateFloodProtection(interval?: number) {
     var cmdQueue: string[][] = [];
     var safeInterval = interval ?? this.opt.floodProtectionDelay;
-    var origSend = this.send;
+    var origSend = this.send.bind(this);
     var dequeue;
 
     // Wrapper for the original function. Just put everything to on central
@@ -1111,8 +1109,8 @@ export class Client extends EventEmitter {
       cmdQueue.push(args);
     };
 
-    this._sendImmediate = () => {
-      origSend.apply(this, arguments);
+    this._sendImmediate = (...args) => {
+      origSend(...args);
     };
 
     this._clearCmdQueue = () => {
@@ -1122,7 +1120,7 @@ export class Client extends EventEmitter {
     dequeue = () => {
       var args = cmdQueue.shift();
       if (args) {
-        origSend.apply(this, args);
+        origSend(...args);
       }
     };
 
@@ -1133,7 +1131,7 @@ export class Client extends EventEmitter {
 
   join(channel, callback) {
     var channelName = channel.split(" ")[0];
-    this.once("join" + channelName, () => {
+    this.once("join" + channelName, (...args) => {
       // if join is successful, add this channel to opts.channels
       // so that it will be re-joined upon reconnect (as channels
       // specified in options are)
@@ -1142,10 +1140,10 @@ export class Client extends EventEmitter {
       }
 
       if (typeof callback == "function") {
-        return callback.apply(this, arguments);
+        return callback(...args);
       }
     });
-    this.send.apply(this, ["JOIN"].concat(channel.split(" ")));
+    this.send("JOIN", ...channel.split(" "));
   }
 
   part(channel, message, callback) {
@@ -1255,7 +1253,7 @@ export class Client extends EventEmitter {
       var callbackWrapper = (info) => {
         if (info.nick.toLowerCase() == nick.toLowerCase()) {
           this.removeListener("whois", callbackWrapper);
-          return callback.apply(this, arguments);
+          return callback(info);
         }
       };
       this.addListener("whois", callbackWrapper);
@@ -1263,10 +1261,8 @@ export class Client extends EventEmitter {
     this.send("WHOIS", nick);
   }
 
-  list() {
-    var args = Array.prototype.slice.call(arguments, 0);
-    args.unshift("LIST");
-    this.send.apply(this, args);
+  list(...args: string[]) {
+    this.send("LIST", ...args);
   }
 
   _addWhoisData(nick: string, key, value, onlyIfExists?: boolean) {
