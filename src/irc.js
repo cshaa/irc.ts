@@ -26,7 +26,7 @@ var EventEmitter = require("events").EventEmitter;
 var colors = require("./colors");
 var parseMessage = require("./parse_message");
 exports.colors = colors;
-var CyclingPingTimer = require("./cycling_ping_timer.js");
+var CyclingPingTimer = require("./cycling_ping_timer.ts").CyclingPingTimer;
 
 var lineDelimiter = new RegExp("\r\n|\r|\n");
 

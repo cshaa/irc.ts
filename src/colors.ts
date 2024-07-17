@@ -1,4 +1,4 @@
-var codes = {
+export const codes = {
   white: "\u000300",
   black: "\u000301",
   dark_blue: "\u000302",
@@ -21,13 +21,11 @@ var codes = {
 
   reset: "\u000f",
 };
-exports.codes = codes;
 
-function wrap(color, text, resetColor) {
+export function wrap(color: string, text: string, resetColor: string) {
   if (codes[color]) {
-    text = codes[color] + text;
-    text += codes[resetColor] ? codes[resetColor] : codes.reset;
+    return codes[color] + text + (codes[resetColor] ?? codes.reset);
+  } else {
+    return text;
   }
-  return text;
 }
-exports.wrap = wrap;

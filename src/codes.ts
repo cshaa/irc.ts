@@ -1,4 +1,6 @@
-module.exports = {
+import type { CommandType } from "./irc";
+
+export const replyFor: Record<string, { name: string; type: CommandType }> = {
   "001": {
     name: "rpl_welcome",
     type: "reply",

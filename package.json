@@ -1,0 +1,7 @@
+{
+  "name": "@csha/irc",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.14.11"
+  }
+}

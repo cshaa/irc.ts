@@ -1,45 +1,47 @@
 /*
-    MIT License
+  Source: https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/types/irc/index.d.ts
+  ----
 
-    Copyright (c) Microsoft Corporation.
+  MIT License
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
+  Copyright (c) Microsoft Corporation.
 
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
 
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE
 */
 
 /// <reference types="node" />
 
 /** This library provides IRC client functionality. */
 
-import events = require("events");
-import net = require("net");
-import tls = require("tls");
+import type { EventEmitter } from "node:events";
+import type { SecureContext } from "node:tls";
+import type { Socket } from "node:net";
 
 /** This library provides IRC client functionality. */
 declare namespace NodeIRC {
   /** A nick connect to an IRC server. */
-  export class Client extends events.EventEmitter {
+  export class Client extends EventEmitter {
     /**
      * Socket to the server. Rarely, if ever needed. Use Client#send
      * instead.
      */
-    public conn: net.Socket;
+    public conn: Socket;
 
     /**
      * Channels joined. Includes channel modes, user list, and topic
@@ -104,7 +106,7 @@ declare namespace NodeIRC {
      * @param nick - nickname
      * @param opts
      */
-    constructor(server: string, nick: string, opts?: IClientOpts);
+    constructor(server: string, nick: string, opts?: Partial<IClientOpts>);
 
     /**
      * Send a raw message to the server; generally speaking, it’s best
@@ -213,143 +215,148 @@ declare namespace NodeIRC {
      * IRC username
      * @default 'nodebot'
      */
-    userName?: string | undefined;
+    userName: string;
 
     /**
      * IRC username
      * @default ''
      */
-    password?: string | undefined;
+    password: string;
 
     /**
      * IRC "real name"
      * @default 'nodeJS IRC client'
      */
-    realName?: string | undefined;
+    realName: string;
 
     /**
      * IRC connection port. See
      * https://nodejs.org/api/net.html#net_socket_remoteport
      * @default 6667
      */
-    port?: number | undefined;
+    port: number;
 
     /**
      * Local interface to bind to for network connections. See
      * https://nodejs.org/api/net.html#net_socket_localaddress
      */
-    localAddress?: string | undefined;
+    localAddress: string | null;
 
     /**
      * Should we output debug messages to STDOUT?
      * @default false
      */
-    debug?: boolean | undefined;
+    debug: boolean;
 
     /**
      * Should we output IRC errors?
      * @default false
      */
-    showErrors?: boolean | undefined;
+    showErrors: boolean;
 
     /**
      * Should we auto-rejoin channels?
      * @default false
      */
-    autoRejoin?: boolean | undefined;
+    autoRejoin: boolean;
 
     /**
      * Should we auto-reconnect to networks?
      * @default true
      */
-    autoConnect?: boolean | undefined;
+    autoConnect: boolean;
 
     /**
      * Channels to join
      * @default []
      */
-    channels?: string[] | undefined;
+    channels: string[];
 
     /**
      * Number of times the client will try to automatically reconnect when disconnected.
      * @default 0
      */
-    retryCount?: number | undefined;
+    retryCount: number | null;
 
     /**
      * Number of milliseconds to wait before retying to automatically reconnect when disconnected.
      * @default 2000
      */
-    retryDelay?: number | undefined;
+    retryDelay: number;
 
     /**
      * Should SSL be used? Can either be true or crypto credentials.
      * @default false
      */
-    secure?: boolean | tls.SecureContext | undefined;
+    secure: boolean | SecureContext;
 
     /**
      * Should we accept self-signed certificates?
      * @default false
      */
-    selfSigned?: boolean | undefined;
+    selfSigned: boolean;
 
     /**
      * Should we accept expired certificates?
      * @default false
      */
-    certExpired?: boolean | undefined;
+    certExpired: boolean;
 
     /**
      * Should we queue our messages to ensure we don't get kicked?
      * @default false
      */
-    floodProtection?: boolean | undefined;
+    floodProtection: boolean;
 
     /**
      * Delay between messages when flood protection is active
      * @default 1000
      */
-    floodProtectionDelay?: number | undefined;
+    floodProtectionDelay: number;
 
     /**
      * Should we use SASL authentication?
      * @default false
      */
-    sasl?: boolean | undefined;
+    sasl: boolean;
 
     /**
      * Should we strip mIRC colors from the output messages?
      * @default false
      */
-    stripColors?: boolean | undefined;
+    stripColors: boolean;
 
     /**
      * Channel prefix
      * @default '&#'
      */
-    channelPrefixes?: string | undefined;
+    channelPrefixes: string;
 
     /**
      * Characters to split a message at.
      * @default 512
      */
-    messageSplit?: number | undefined;
+    messageSplit: number;
 
     /**
      * Encoding to use. See
      * https://nodejs.org/api/stream.html#stream_readable_setencoding_encoding
      * @default 'utf-8'
      */
-    encoding?: string | undefined;
+    encoding: string | false;
+
+    webirc: {
+      pass: string;
+      ip: string;
+      host: string;
+    };
+
+    millisecondsOfSilenceBeforePingSent: number;
+    millisecondsBeforePingTimeout: number;
   }
 
   /** Command types */
-  export enum CommandType {
-    normal,
-    reply,
-    error,
-  }
+  export type CommandType = "normal" | "reply" | "error";
 
   /** Parsed IRC message. */
   export interface IMessage {
@@ -367,6 +374,18 @@ declare namespace NodeIRC {
 
     /** Command arguments */
     args: string[];
+
+    /** Nickname */
+    nick?: string;
+
+    /** Username */
+    user?: string;
+
+    /** Hostname */
+    host?: string;
+
+    /** Server */
+    server?: string;
   }
 
   /** Whois data */
@@ -377,7 +396,7 @@ declare namespace NodeIRC {
     /** Username */
     user: string;
 
-    /** Hostnamej */
+    /** Hostname */
     host: string;
 
     /** Real name" */
