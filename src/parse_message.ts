@@ -12,34 +12,33 @@ import type { IMessage } from "./types";
  * @return A parsed message object.
  */
 export function parseMessage(line: string, stripColors: boolean) {
-  var message: Partial<IMessage> = {};
-  var match;
+  const message: Partial<IMessage> = {};
 
   if (stripColors) {
     line = stripColorsAndStyle(line);
   }
 
   // Parse prefix
-  match = line.match(/^:([^ ]+) +/);
-  if (match) {
-    message.prefix = match[1];
+  const [_a, prefix] = line.match(/^:([^ ]+) +/) ?? [undefined];
+  if (prefix !== undefined) {
+    message.prefix = prefix;
     line = line.replace(/^:[^ ]+ +/, "");
-    match = message.prefix!.match(
+    const [_, nick, user, host] = message.prefix!.match(
       /^([_a-zA-Z0-9\~\[\]\\`^{}|-]*)(!([^@]+)@(.*))?$/
-    );
-    if (match) {
-      message.nick = match[1];
-      message.user = match[3];
-      message.host = match[4];
+    ) ?? [undefined];
+    if (nick !== undefined) {
+      message.nick = nick;
+      message.user = user;
+      message.host = host;
     } else {
       message.server = message.prefix;
     }
   }
 
   // Parse command
-  match = line.match(/^([^ ]+) */);
-  message.command = match[1];
-  message.rawCommand = match[1];
+  const [_b, command] = line.match(/^([^ ]+) */)!;
+  message.command = command;
+  message.rawCommand = command;
   message.commandType = "normal";
   line = line.replace(/^[^ ]+ +/, "");
 
@@ -49,21 +48,15 @@ export function parseMessage(line: string, stripColors: boolean) {
   }
 
   message.args = [];
-  var middle, trailing;
 
   // Parse parameters
-  if (line.search(/^:|\s+:/) != -1) {
-    match = line.match(/(.*?)(?:^:|\s+:)(.*)/);
-    middle = match[1].trimRight();
-    trailing = match[2];
-  } else {
-    middle = line;
-  }
+  const [_c, middle, trailing] =
+    line.search(/^:|\s+:/) !== -1
+      ? line.match(/(.*?)(?:^:|\s+:)(.*)/)!
+      : [undefined, line, undefined];
 
-  if (middle.length) message.args = middle.split(/ +/);
-
-  if (typeof trailing != "undefined" && trailing.length)
-    message.args!.push(trailing);
+  if (middle) message.args = middle.split(/ +/);
+  if (trailing) message.args.push(trailing);
 
   return message;
 }

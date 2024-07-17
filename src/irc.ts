@@ -27,11 +27,11 @@ import type { IChannel, IClientOpts, handlers } from "./types";
 
 export * as colors from "./colors";
 
-var pingCounter = 1;
+let pingCounter = 1;
 
 import { CyclingPingTimer } from "./cycling_ping_timer";
 
-var lineDelimiter = new RegExp("\r\n|\r|\n");
+const lineDelimiter = new RegExp("\r\n|\r|\n");
 
 export class Client extends EventEmitter {
   public opt: IClientOpts & {
@@ -836,7 +836,7 @@ export class Client extends EventEmitter {
   }
 
   chanData(name: string, create?: boolean) {
-    var key = name.toLowerCase();
+    const key = name.toLowerCase();
     if (create) {
       this.chans[key] = this.chans[key] ?? {
         key: key,
@@ -889,7 +889,7 @@ export class Client extends EventEmitter {
     this.chans = {};
 
     // socket opts
-    var connectionOpts = {
+    const connectionOpts = {
       host: this.opt.server,
       port: this.opt.port,
       localAddress: undefined as string | undefined,
@@ -906,7 +906,7 @@ export class Client extends EventEmitter {
 
       if (typeof this.opt.secure == "object") {
         // copy "secure" opts to options passed to connect()
-        for (var f in this.opt.secure) {
+        for (const f in this.opt.secure) {
           connectionOpts[f] = this.opt.secure[f];
         }
       }
@@ -974,18 +974,20 @@ export class Client extends EventEmitter {
       this.conn.setEncoding("utf8");
     }
 
-    var buffer = new Buffer("");
+    let buffer: Buffer | string = Buffer.from("");
 
     const handleData = (chunk) => {
       this.conn!.cyclingPingTimer!.notifyOfActivity();
 
       if (typeof chunk === "string") {
-        (buffer as any) += chunk;
+        buffer += chunk;
       } else {
         buffer = Buffer.concat([buffer, chunk]);
       }
 
-      var lines = this.convertEncoding(buffer).toString().split(lineDelimiter);
+      const lines = this.convertEncoding(buffer)
+        .toString()
+        .split(lineDelimiter);
 
       if (lines.pop()) {
         // if buffer is not ended with \r\n, there's more chunks.
@@ -997,7 +999,7 @@ export class Client extends EventEmitter {
 
       lines.forEach((line) => {
         if (line.length) {
-          var message = parseMessage(line, this.opt.stripColors);
+          const message = parseMessage(line, this.opt.stripColors);
 
           try {
             this.emit("raw", message);
@@ -1062,12 +1064,10 @@ export class Client extends EventEmitter {
     message = message || "node-irc says goodbye";
 
     if (this.conn!.readyState == "open") {
-      var sendFunction;
+      let sendFunction = this.send;
       if (this.opt.floodProtection) {
         sendFunction = this._sendImmediate;
         this._clearCmdQueue();
-      } else {
-        sendFunction = this.send;
       }
       sendFunction.call(this, "QUIT", message);
     }
@@ -1098,10 +1098,9 @@ export class Client extends EventEmitter {
   _clearCmdQueue = () => {};
 
   activateFloodProtection(interval?: number) {
-    var cmdQueue: string[][] = [];
-    var safeInterval = interval ?? this.opt.floodProtectionDelay;
-    var origSend = this.send.bind(this);
-    var dequeue;
+    let cmdQueue: string[][] = [];
+    const safeInterval = interval ?? this.opt.floodProtectionDelay;
+    const origSend = this.send.bind(this);
 
     // Wrapper for the original function. Just put everything to on central
     // queue.
@@ -1117,11 +1116,9 @@ export class Client extends EventEmitter {
       cmdQueue = [];
     };
 
-    dequeue = () => {
-      var args = cmdQueue.shift();
-      if (args) {
-        origSend(...args);
-      }
+    const dequeue = () => {
+      const args = cmdQueue.shift();
+      if (args) origSend(...args);
     };
 
     // Slowly unpack the queue without flooding.
@@ -1130,7 +1127,7 @@ export class Client extends EventEmitter {
   }
 
   join(channel, callback) {
-    var channelName = channel.split(" ")[0];
+    const channelName = channel.split(" ")[0];
     this.once("join" + channelName, (...args) => {
       // if join is successful, add this channel to opts.channels
       // so that it will be re-joined upon reconnect (as channels
@@ -1180,7 +1177,7 @@ export class Client extends EventEmitter {
     }
   }
 
-  _splitLongLines(words, maxLength, destination) {
+  _splitLongLines(words: string, maxLength: number, destination: string[]) {
     maxLength = maxLength || 450; // If maxLength hasn't been initialized yet, prefer an arbitrarily low line length over crashing.
     if (words.length == 0) {
       return destination;
@@ -1189,15 +1186,13 @@ export class Client extends EventEmitter {
       destination.push(words);
       return destination;
     }
-    var c = words[maxLength];
-    var cutPos;
-    var wsLength = 1;
-    if (c.match(/\s/)) {
-      cutPos = maxLength;
-    } else {
-      var offset = 1;
+    const c = words[maxLength];
+    let cutPos = maxLength;
+    let wsLength = 1;
+    if (!c.match(/\s/)) {
+      let offset = 1;
       while (maxLength - offset > 0) {
-        var c = words[maxLength - offset];
+        const c = words[maxLength - offset];
         if (c.match(/\s/)) {
           cutPos = maxLength - offset;
           break;
@@ -1209,7 +1204,7 @@ export class Client extends EventEmitter {
         wsLength = 0;
       }
     }
-    var part = words.substring(0, cutPos);
+    const part = words.substring(0, cutPos);
     destination.push(part);
     return this._splitLongLines(
       words.substring(cutPos + wsLength, words.length),
@@ -1227,7 +1222,7 @@ export class Client extends EventEmitter {
   }
 
   _speak(kind, target, text) {
-    var maxLength = Math.min(
+    const maxLength = Math.min(
       this.maxLineLength - target.length,
       this.opt.messageSplit
     );
@@ -1237,7 +1232,7 @@ export class Client extends EventEmitter {
         .split(/\r?\n/)
         .filter((line) => line.length > 0)
         .forEach((line) => {
-          var linesToSend = this._splitLongLines(line, maxLength, []);
+          const linesToSend = this._splitLongLines(line, maxLength, []);
           linesToSend.forEach((toSend) => {
             this.send(kind, target, toSend);
             if (kind == "PRIVMSG") {
@@ -1250,7 +1245,7 @@ export class Client extends EventEmitter {
 
   whois(nick, callback) {
     if (typeof callback === "function") {
-      var callbackWrapper = (info) => {
+      const callbackWrapper = (info) => {
         if (info.nick.toLowerCase() == nick.toLowerCase()) {
           this.removeListener("whois", callbackWrapper);
           return callback(info);
@@ -1274,7 +1269,7 @@ export class Client extends EventEmitter {
   _clearWhoisData(nick: string) {
     // Ensure that at least the nick exists before trying to return
     this._addWhoisData(nick, "nick", nick);
-    var data = this._whoisData[nick];
+    const data = this._whoisData[nick];
     delete this._whoisData[nick];
     return data;
   }
@@ -1282,7 +1277,7 @@ export class Client extends EventEmitter {
   _handleCTCP(from, to, text, type, message) {
     text = text.slice(1);
     text = text.slice(0, text.indexOf("\u0001"));
-    var parts = text.split(" ");
+    const parts = text.split(" ");
     this.emit("ctcp", from, to, text, type, message);
     this.emit("ctcp-" + type, from, to, text, message);
     if (type === "privmsg" && text === "VERSION")
@@ -1300,15 +1295,17 @@ export class Client extends EventEmitter {
     );
   }
 
+  // TODO use TextDecoder
   convertEncoding(str) {
-    var out = str;
+    let out = str;
 
     if (this.opt.encoding) {
+      let charset;
       try {
-        var charsetDetector = require("node-icu-charset-detector");
-        var Iconv = require("iconv").Iconv;
-        var charset = charsetDetector.detectCharset(str);
-        var converter = new Iconv(charset.toString(), this.opt.encoding);
+        const charsetDetector = require("node-icu-charset-detector");
+        const Iconv = require("iconv").Iconv;
+        charset = charsetDetector.detectCharset(str);
+        const converter = new Iconv(charset.toString(), this.opt.encoding);
 
         out = converter.convert(str);
       } catch (err) {
