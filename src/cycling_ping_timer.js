@@ -1,7 +1,7 @@
-'use strict';
+"use strict";
 
-var util = require('util');
-var EventEmitter = require('events').EventEmitter;
+var util = require("util");
+var EventEmitter = require("events").EventEmitter;
 
 /**
  * This class encapsulates the ping timeout functionality. When enough
@@ -21,65 +21,65 @@ var EventEmitter = require('events').EventEmitter;
 var ctr = 0;
 
 function CyclingPingTimer(client) {
-    var timerNumber = ctr++;
-    var started = false;
-    var self = this;
+  var timerNumber = ctr++;
+  var started = false;
+  var self = this;
 
-    // Only one of these two should be non-null at any given time.
-    var loopingTimeout = null;
-    var pingWaitTimeout = null;
+  // Only one of these two should be non-null at any given time.
+  var loopingTimeout = null;
+  var pingWaitTimeout = null;
 
-    // conditionally log debug messages
-    function debug(msg) {
-        if (client.opt.debug) {
-            console.error('CyclingPingTimer ' + timerNumber + ': ' + msg);
-        }
+  // conditionally log debug messages
+  function debug(msg) {
+    if (client.opt.debug) {
+      console.error("CyclingPingTimer " + timerNumber + ": " + msg);
     }
+  }
 
-    // set up EventEmitter functionality
-    EventEmitter.call(self);
+  // set up EventEmitter functionality
+  EventEmitter.call(self);
 
-    self.on('wantPing', function() {
-        debug('server silent for too long, let\'s send a PING');
-        pingWaitTimeout = setTimeout(function() {
-            self.stop();
-            debug('ping timeout!');
-            self.emit('pingTimeout');
-        }, client.opt.millisecondsBeforePingTimeout);
-    });
+  self.on("wantPing", function () {
+    debug("server silent for too long, let's send a PING");
+    pingWaitTimeout = setTimeout(function () {
+      self.stop();
+      debug("ping timeout!");
+      self.emit("pingTimeout");
+    }, client.opt.millisecondsBeforePingTimeout);
+  });
 
-    self.notifyOfActivity = function() {
-        if (started) {
-            self.stop();
-            self.start();
-        }
-    };
+  self.notifyOfActivity = function () {
+    if (started) {
+      self.stop();
+      self.start();
+    }
+  };
 
-    self.stop = function() {
-        if (!started) {
-            return;
-        }
-        started = false;
+  self.stop = function () {
+    if (!started) {
+      return;
+    }
+    started = false;
 
-        clearTimeout(loopingTimeout);
-        clearTimeout(pingWaitTimeout);
+    clearTimeout(loopingTimeout);
+    clearTimeout(pingWaitTimeout);
 
-        loopingTimeout = null;
-        pingWaitTimeout = null;
-    };
+    loopingTimeout = null;
+    pingWaitTimeout = null;
+  };
 
-    self.start = function() {
-        if (started) {
-            debug('can\'t start, not stopped!');
-            return;
-        }
-        started = true;
+  self.start = function () {
+    if (started) {
+      debug("can't start, not stopped!");
+      return;
+    }
+    started = true;
 
-        loopingTimeout = setTimeout(function() {
-            loopingTimeout = null;
-            self.emit('wantPing');
-        }, client.opt.millisecondsOfSilenceBeforePingSent);
-    };
+    loopingTimeout = setTimeout(function () {
+      loopingTimeout = null;
+      self.emit("wantPing");
+    }, client.opt.millisecondsOfSilenceBeforePingSent);
+  };
 }
 
 util.inherits(CyclingPingTimer, EventEmitter);
