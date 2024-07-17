@@ -1,5 +1,6 @@
 {
   "name": "@csha/irc",
+  "main": "mod.ts",
   "dependencies": {},
   "devDependencies": {
     "@types/node": "^20.14.11"

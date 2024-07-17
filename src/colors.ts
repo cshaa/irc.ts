@@ -22,9 +22,9 @@ export const codes = {
   reset: "\u000f",
 };
 
-export function wrap(color: string, text: string, resetColor: string) {
+export function wrap(color: string, text: string, resetColor?: string) {
   if (codes[color]) {
-    return codes[color] + text + (codes[resetColor] ?? codes.reset);
+    return codes[color] + text + (codes[resetColor!] ?? codes.reset);
   } else {
     return text;
   }

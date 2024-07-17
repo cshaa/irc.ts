@@ -1,6 +1,6 @@
 import { replyFor } from "./codes";
 import { stripColorsAndStyle } from "./color-utils";
-import type { IMessage } from "./irc";
+import type { IMessage } from "./types";
 
 /**
  * parseMessage(line, stripColors)
@@ -11,7 +11,7 @@ import type { IMessage } from "./irc";
  * @param stripColors If true, strip IRC colors.
  * @return A parsed message object.
  */
-export default function parseMessage(line: string, stripColors: boolean) {
+export function parseMessage(line: string, stripColors: boolean) {
   var message: Partial<IMessage> = {};
   var match;
 

@@ -1,10 +1,10 @@
-export {
-  Client,
-  type CommandType,
-  type IChannel,
-  type IClientOpts,
-  type IMessage,
-  type IWhoisData,
-  colors,
+export { Client, colors } from "./src/irc";
+
+export type {
+  CommandType,
+  IChannel,
+  IClientOpts,
+  IMessage,
+  IWhoisData,
   handlers,
-} from "./src/irc";
+} from "./src/types";
