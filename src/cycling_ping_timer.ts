@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { Client } from "./irc";
+import type { Client } from "./irc.ts";
 let nextTimerId = 0;
 
 /**

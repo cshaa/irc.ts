@@ -1,4 +1,4 @@
-export { Client, colors } from "./src/irc";
+export { Client, colors } from "./src/irc.ts";
 
 export type {
   CommandType,
@@ -7,4 +7,4 @@ export type {
   IMessage,
   IWhoisData,
   handlers,
-} from "./src/types";
+} from "./src/types.ts";

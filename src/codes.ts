@@ -1,4 +1,4 @@
-import type { CommandType } from "./types";
+import type { CommandType } from "./types.ts";
 
 export const replyFor: Record<string, { name: string; type: CommandType }> = {
   "001": {

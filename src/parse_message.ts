@@ -1,6 +1,6 @@
-import { replyFor } from "./codes";
-import { stripColorsAndStyle } from "./color-utils";
-import type { IMessage } from "./types";
+import { replyFor } from "./codes.ts";
+import { stripColorsAndStyle } from "./color-utils.ts";
+import type { IMessage } from "./types.ts";
 
 /**
  * parseMessage(line, stripColors)

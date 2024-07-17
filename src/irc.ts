@@ -22,14 +22,14 @@ import { connect as tlsConnect, type TLSSocket } from "node:tls";
 import { inspect } from "node:util";
 import { EventEmitter } from "node:events";
 
-import { parseMessage } from "./parse_message";
-import type { IChannel, IClientOpts, handlers } from "./types";
+import { parseMessage } from "./parse_message.ts";
+import type { IChannel, IClientOpts, handlers } from "./types.ts";
 
-export * as colors from "./colors";
+export * as colors from "./colors.ts";
 
 let pingCounter = 1;
 
-import { CyclingPingTimer } from "./cycling_ping_timer";
+import { CyclingPingTimer } from "./cycling_ping_timer.ts";
 
 const lineDelimiter = new RegExp("\r\n|\r|\n");
 
