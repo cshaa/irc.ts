@@ -354,6 +354,11 @@ export interface IClientOpts {
 /** Command types */
 export type CommandType = "normal" | "reply" | "error";
 
+export interface JoinResult {
+  nick: string;
+  message: IMessage;
+}
+
 /** Parsed IRC message. */
 export interface IMessage {
   /** Prefix */

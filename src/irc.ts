@@ -1,20 +1,25 @@
 /*
-    irc.js - Node JS IRC client library
+  irc.js - Node JS IRC client library
 
-    (C) Copyright Martyn Smith 2010
+  (C) Copyright Martyn Smith 2010
 
-    This library is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+  This library is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
 
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this library.  If not, see <http://www.gnu.org/licenses/>.
+  You should have received a copy of the GNU General Public License
+  along with this library.  If not, see <http://www.gnu.org/licenses/>.
+
+  ----
+
+  Some type definitions were taken from npm:@types/irc, which is
+  available under the MIT license.
 */
 
 import { createConnection, type Socket } from "node:net";
@@ -23,7 +28,13 @@ import { inspect } from "node:util";
 import { EventEmitter } from "node:events";
 
 import { parseMessage } from "./parse_message.ts";
-import type { IChannel, IClientOpts, handlers } from "./types.ts";
+import {
+  JoinResult,
+  type IChannel,
+  type IClientOpts,
+  type IMessage,
+  type handlers,
+} from "./types.ts";
 
 export * as colors from "./colors.ts";
 
@@ -34,6 +45,51 @@ import { CyclingPingTimer } from "./cycling_ping_timer.ts";
 const lineDelimiter = new RegExp("\r\n|\r|\n");
 
 export class Client extends EventEmitter {
+  /**
+   * Socket to the server. Rarely, if ever needed. Use Client#send
+   * instead.
+   */
+  public conn:
+    | ((Socket | TLSSocket) & {
+        requestedDisconnect?: boolean;
+        cyclingPingTimer?: CyclingPingTimer;
+      })
+    | null = null;
+
+  /**
+   * Channels joined. Includes channel modes, user list, and topic
+   * information. Only updated after the server recognizes the join.
+   */
+  public chans: {
+    [index: string]: {
+      key: string;
+      serverName: string;
+      users: {
+        [index: string]: string;
+      };
+      mode: string;
+      modeParams: {
+        [index: string]: string;
+      };
+      created: string;
+    };
+  };
+
+  hostMask = "";
+
+  /** The server's message of the day */
+  public motd = "";
+
+  /** @deprecated use `listChannels` */
+  channellist: IChannel[] = [];
+
+  /** The maximum length of one message, the rest will be split into a new message */
+  public maxLineLength = 200;
+
+  prefixForMode = {};
+  modeForPrefix = {};
+  _whoisData = {};
+
   public opt: IClientOpts & {
     server: string;
     nick: string;
@@ -94,18 +150,9 @@ export class Client extends EventEmitter {
     usermodes: "",
   };
 
-  hostMask = "";
-
-  /** The server's message of the day */
-  motd = "";
-
-  channellist: IChannel[] = [];
-
-  /** Maximum line length */
-  maxLineLength = 200;
-
   constructor(
     server: string,
+    /** The current nick of the client. Updated if the nick changes */
     public nick: string,
     opts?: Partial<IClientOpts>
   ) {
@@ -415,7 +462,7 @@ export class Client extends EventEmitter {
 
           // TODO better way of finding what channels a user is in?
           Object.keys(this.chans).forEach((channame) => {
-            var channel = this.chans[channame];
+            const channel = this.chans[channame];
             channel.users[message.args[0]] = channel.users[message.nick];
             delete channel.users[message.nick];
             channels.push(channame);
@@ -612,10 +659,10 @@ export class Client extends EventEmitter {
             );
           }
           if (this.nick == message.nick) {
-            channel = this.chanData(message.args[0]);
+            const channel = this.chanData(message.args[0]);
             delete this.chans[channel.key];
           } else {
-            channel = this.chanData(message.args[0]);
+            const channel = this.chanData(message.args[0]);
             if (channel && channel.users) {
               delete channel.users[message.nick];
             }
@@ -649,10 +696,10 @@ export class Client extends EventEmitter {
           }
 
           if (this.nick == message.args[1]) {
-            channel = this.chanData(message.args[0]);
+            const channel = this.chanData(message.args[0]);
             delete this.chans[channel.key];
           } else {
-            channel = this.chanData(message.args[0]);
+            const channel = this.chanData(message.args[0]);
             if (channel && channel.users) {
               delete channel.users[message.args[1]];
             }
@@ -662,7 +709,7 @@ export class Client extends EventEmitter {
           nick = message.args[0];
           channels = [];
           Object.keys(this.chans).forEach((channame) => {
-            var channel = this.chans[channame];
+            const channel = this.chans[channame];
             channels.push(channame);
             delete channel.users[nick];
           });
@@ -711,7 +758,7 @@ export class Client extends EventEmitter {
 
           // TODO better way of finding what channels a user is in?
           Object.keys(this.chans).forEach((channame) => {
-            var channel = this.chans[channame];
+            const channel = this.chans[channame];
             delete channel.users[message.nick];
             channels.push(channame);
           });
@@ -806,18 +853,7 @@ export class Client extends EventEmitter {
     });
   }
 
-  conn:
-    | ((Socket | TLSSocket) & {
-        requestedDisconnect?: boolean;
-        cyclingPingTimer?: CyclingPingTimer;
-      })
-    | null = null;
-  prefixForMode = {};
-  modeForPrefix = {};
-  chans = {};
-  _whoisData = {};
-
-  connectionTimedOut(conn) {
+  private connectionTimedOut(conn) {
     if (conn !== this.conn) {
       // Only care about a timeout event if it came from the connection
       // that is most current.
@@ -826,7 +862,7 @@ export class Client extends EventEmitter {
     this.end();
   }
 
-  connectionWantsPing(conn) {
+  private connectionWantsPing(conn) {
     if (conn !== this.conn) {
       // Only care about a wantPing event if it came from the connection
       // that is most current.
@@ -835,7 +871,7 @@ export class Client extends EventEmitter {
     this.send("PING", (pingCounter++).toString());
   }
 
-  chanData(name: string, create?: boolean) {
+  private chanData(name: string, create?: boolean) {
     const key = name.toLowerCase();
     if (create) {
       this.chans[key] = this.chans[key] ?? {
@@ -844,13 +880,14 @@ export class Client extends EventEmitter {
         users: {},
         modeParams: {},
         mode: "",
+        created: "",
       };
     }
 
     return this.chans[key];
   }
 
-  _connectionHandler = () => {
+  private _connectionHandler = () => {
     if (this.opt.webirc.ip && this.opt.webirc.pass && this.opt.webirc.host) {
       this.send(
         "WEBIRC",
@@ -872,20 +909,47 @@ export class Client extends EventEmitter {
     this._updateMaxLineLength();
     this.send("USER", this.opt.userName, "8", "*", this.opt.realName);
 
-    (this.conn as any).cyclingPingTimer.start();
+    this.conn!.cyclingPingTimer!.start();
 
     this.emit("connect");
   };
 
-  connect(retryCount?: number | handlers.IRaw, callback?: handlers.IRaw) {
-    if (typeof retryCount === "function") {
-      callback = retryCount;
+  /**
+   * Connect to the server. Use when `autoConnect` is false.
+   * @param retryCount - times to retry
+   * @param callback - deprecated, use the returned promise instead
+   */
+  public connect(retryCount?: number): Promise<void>;
+
+  /** @deprecated instead of a callback, use the returned promise */
+  public connect(callback: handlers.IRaw): Promise<void>;
+
+  /** @deprecated instead of a callback, use the returned promise */
+  public connect(retryCount: number, callback: handlers.IRaw): Promise<void>;
+
+  connect(a?: number | handlers.IRaw, b?: handlers.IRaw): Promise<void> {
+    let retryCount: number;
+    let connectedCallback: handlers.IRaw | undefined;
+    if (typeof a === "function") {
+      connectedCallback = a;
       retryCount = undefined;
+    } else {
+      retryCount = a;
+      connectedCallback = b;
     }
-    retryCount = retryCount || 0;
-    if (typeof callback === "function") {
-      this.once("registered", callback);
+    retryCount ??= 0;
+
+    const {
+      promise: registeredPromise,
+      resolve,
+      reject,
+    } = Promise.withResolvers<void>();
+    this.once("registered", resolve);
+
+    if (typeof connectedCallback === "function") {
+      this.once("registered", connectedCallback);
     }
+
     this.chans = {};
 
     // socket opts
@@ -945,6 +1009,7 @@ export class Client extends EventEmitter {
         } else {
           // authorization failed
           console.error(authorizationError);
+          reject(authorizationError);
         }
       });
     } else {
@@ -1023,13 +1088,14 @@ export class Client extends EventEmitter {
       if (this.opt.debug) console.info("Disconnected: reconnecting");
       if (this.opt.retryCount !== null && retryCount >= this.opt.retryCount) {
         if (this.opt.debug) {
-          console.info(
+          console.error(
             "Maximum retry count (" +
               this.opt.retryCount +
               ") reached. Aborting"
           );
         }
         this.emit("abort", this.opt.retryCount);
+        reject();
         return;
       }
 
@@ -1046,6 +1112,8 @@ export class Client extends EventEmitter {
         console.info("Network error: " + exception);
       }
     });
+
+    return registeredPromise;
   }
 
   end() {
@@ -1056,14 +1124,32 @@ export class Client extends EventEmitter {
     this.conn = null;
   }
 
-  disconnect(message, callback) {
-    if (typeof message === "function") {
-      callback = message;
-      message = undefined;
-    }
-    message = message || "node-irc says goodbye";
+  /**
+   * Disconnect from the IRC server
+   * @param message - message to send
+   */
+  public disconnect(message?: string): Promise<void>;
 
-    if (this.conn!.readyState == "open") {
+  /** @deprecated instead of a callback, use the returned promise */
+  public disconnect(callback: () => void): Promise<void>;
+
+  /** @deprecated instead of a callback, use the returned promise */
+  public disconnect(message: string, callback: () => void): Promise<void>;
+
+  disconnect(a?: string | (() => void), b?: () => void): Promise<void> {
+    let message: string;
+    let callback: (() => void) | undefined;
+    if (typeof a === "function") {
+      callback = a;
+    } else {
+      message = a;
+      callback = b;
+    }
+    message ??= "node-irc says goodbye";
+
+    const { promise, resolve } = Promise.withResolvers<void>();
+
+    if (this.conn.readyState === "open") {
       let sendFunction = this.send;
       if (this.opt.floodProtection) {
         sendFunction = this._sendImmediate;
@@ -1071,12 +1157,22 @@ export class Client extends EventEmitter {
       }
       sendFunction.call(this, "QUIT", message);
     }
-    this.conn!.requestedDisconnect = true;
-    if (typeof callback === "function") {
-      this.conn!.once("end", callback);
-    }
-    this.conn!.end();
+    this.conn.requestedDisconnect = true;
+
+    if (callback) this.conn.once("end", callback);
+    this.conn.once("end", resolve);
+
+    this.conn.end();
+    return promise;
   }
+
+  /**
+   * Send a raw message to the server; generally speaking, it’s best
+   * not to use this method unless you know what you’re doing.
+   * @param command - irc command
+   * @param args - command arguments (splat)
+   */
+  public send(command: string, ...args: string[]): void;
 
   send(...args: [string, ...string[]]) {
     if (
@@ -1089,15 +1185,22 @@ export class Client extends EventEmitter {
 
     if (this.opt.debug) console.info("SEND: " + args.join(" "));
 
-    if (!(this.conn as any).requestedDisconnect) {
+    if (!this.conn!.requestedDisconnect) {
       this.conn!.write(args.join(" ") + "\r\n");
     }
   }
 
-  _sendImmediate = () => {};
-  _clearCmdQueue = () => {};
+  private _sendImmediate = () => {};
+  private _clearCmdQueue = () => {};
 
-  activateFloodProtection(interval?: number) {
+  /**
+   * Activate flood protection “after the fact”. You can also use
+   * floodProtection while instantiating the Client to enable flood
+   * protection, and floodProtectionDelay to set the default message
+   * interval.
+   * @param interval - ms to wait between messages
+   */
+  public activateFloodProtection(interval?: number): void {
     let cmdQueue: string[][] = [];
     const safeInterval = interval ?? this.opt.floodProtectionDelay;
     const origSend = this.send.bind(this);
@@ -1126,9 +1229,24 @@ export class Client extends EventEmitter {
     dequeue();
   }
 
-  join(channel, callback) {
+  /**
+   * Join the specified channel
+   * @param channel - channel to join
+   * @param callback
+   */
+  public join(channel: string): Promise<JoinResult>;
+
+  /** @deprecated instead of a callback, use the returned promise */
+  public join(
+    channel: string,
+    callback: handlers.IJoinChannel
+  ): Promise<JoinResult>;
+
+  join(channel: string, callback?: handlers.IJoinChannel): Promise<JoinResult> {
     const channelName = channel.split(" ")[0];
-    this.once("join" + channelName, (...args) => {
+    const { promise, resolve } = Promise.withResolvers<JoinResult>();
+
+    this.once("join" + channelName, (nick: string, message: IMessage) => {
       // if join is successful, add this channel to opts.channels
       // so that it will be re-joined upon reconnect (as channels
       // specified in options are)
@@ -1136,11 +1254,13 @@ export class Client extends EventEmitter {
         this.opt.channels.push(channel);
       }
 
-      if (typeof callback == "function") {
-        return callback(...args);
-      }
+      if (callback) return callback(nick, message);
+      resolve({ nick, message });
     });
+
     this.send("JOIN", ...channel.split(" "));
+
+    return promise;
   }
 
   part(channel, message, callback) {
@@ -1256,17 +1376,25 @@ export class Client extends EventEmitter {
     this.send("WHOIS", nick);
   }
 
+  /** @deprecated use `listChannels` */
   list(...args: string[]) {
     this.send("LIST", ...args);
   }
 
-  _addWhoisData(nick: string, key, value, onlyIfExists?: boolean) {
+  public listChannels(): Promise<IChannel[]> {
+    const { promise, resolve } = Promise.withResolvers<IChannel[]>();
+    this.send("LIST");
+    this.once("channellist", (chs) => resolve(chs));
+    return promise;
+  }
+
+  private _addWhoisData(nick: string, key, value, onlyIfExists?: boolean) {
     if (onlyIfExists && !this._whoisData[nick]) return;
     this._whoisData[nick] = this._whoisData[nick] || { nick: nick };
     this._whoisData[nick][key] = value;
   }
 
-  _clearWhoisData(nick: string) {
+  private _clearWhoisData(nick: string) {
     // Ensure that at least the nick exists before trying to return
     this._addWhoisData(nick, "nick", nick);
     const data = this._whoisData[nick];
@@ -1274,7 +1402,7 @@ export class Client extends EventEmitter {
     return data;
   }
 
-  _handleCTCP(from, to, text, type, message) {
+  private _handleCTCP(from, to, text, type, message) {
     text = text.slice(1);
     text = text.slice(0, text.indexOf("\u0001"));
     const parts = text.split(" ");
@@ -1295,29 +1423,17 @@ export class Client extends EventEmitter {
     );
   }
 
-  // TODO use TextDecoder
+  // TODO use npm:charset-detector & TextDecoder
   convertEncoding(str) {
     let out = str;
 
     if (this.opt.encoding) {
-      let charset;
-      try {
-        const charsetDetector = require("node-icu-charset-detector");
-        const Iconv = require("iconv").Iconv;
-        charset = charsetDetector.detectCharset(str);
-        const converter = new Iconv(charset.toString(), this.opt.encoding);
-
-        out = converter.convert(str);
-      } catch (err) {
-        if (this.opt.debug) {
-          console.info("\u001b[01;31mERROR: " + err + "\u001b[0m");
-          inspect({ str: str, charset: charset });
-        }
-      }
+      throw "todo";
     }
 
     return out;
   }
+
   // blatantly stolen from irssi's splitlong.pl. Thanks, Bjoern Krombholz!
   _updateMaxLineLength() {
     // 497 = 510 - (":" + "!" + " PRIVMSG " + " :").length;
