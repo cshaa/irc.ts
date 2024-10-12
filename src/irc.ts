@@ -26,6 +26,7 @@ import { createConnection, type Socket } from "node:net";
 import { connect as tlsConnect, type TLSSocket } from "node:tls";
 import { inspect } from "node:util";
 import { EventEmitter } from "node:events";
+import { Buffer } from "node:buffer";
 
 import { parseMessage } from "./parse_message.ts";
 import {
@@ -781,7 +782,7 @@ export class Client extends EventEmitter {
           if (message.args[0] === "+")
             this.send(
               "AUTHENTICATE",
-              new Buffer(
+              Buffer.from(
                 this.opt.nick +
                   "\0" +
                   this.opt.userName +
@@ -1059,7 +1060,7 @@ export class Client extends EventEmitter {
         return;
       } else {
         // else, initialize the buffer.
-        buffer = new Buffer("");
+        buffer = Buffer.from("");
       }
 
       lines.forEach((line) => {
